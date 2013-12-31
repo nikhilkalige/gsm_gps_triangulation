@@ -70,11 +70,11 @@ char GSM::InitGPRS(char* apn, char* login, char* password)
 
     if (CLS_FREE != GetCommLineStatus()) return (ret_val);
     SetCommLineStatus(CLS_ATCMD);
-    ret_val = SendATCmdWaitResp("AT+CSTT=\"CMNET\"", START_XXLONG_COMM_TMOUT, MAX_MID_INTERCHAR_TMOUT, "OK", 2);
+    ret_val = SendATCmdWaitRespF(PSTR("AT+CSTT=\"CMNET\""), START_XXLONG_COMM_TMOUT, MAX_MID_INTERCHAR_TMOUT, "OK", 2);
     if (ret_val == AT_RESP_OK) {
-        ret_val = SendATCmdWaitResp("AT+CIICR", START_XXLONG_COMM_TMOUT, MAX_MID_INTERCHAR_TMOUT, "OK", 2);
+        ret_val = SendATCmdWaitRespF(PSTR("AT+CIICR"), START_XXLONG_COMM_TMOUT, MAX_MID_INTERCHAR_TMOUT, "OK", 2);
         if (ret_val == AT_RESP_OK) {
-            SendATCmdWaitResp("AT+CIFSR", START_XXLONG_COMM_TMOUT, MAX_MID_INTERCHAR_TMOUT, "", 2);
+            SendATCmdWaitRespF(PSTR("AT+CIFSR"), START_XXLONG_COMM_TMOUT, MAX_MID_INTERCHAR_TMOUT, "", 2);
             if (ret_val == AT_RESP_OK) {
                 ret_val = 1;
             }

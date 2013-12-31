@@ -262,7 +262,7 @@ byte GSM::CheckRegistration(void)
 
   if (CLS_FREE != GetCommLineStatus()) return (REG_COMM_LINE_BUSY);
   SetCommLineStatus(CLS_ATCMD);
-  Println("AT+CREG?");
+  PrintlnF(PSTR("AT+CREG?"));
   // 5 sec. for initial comm tmout
   // 20 msec. for inter character timeout
   status = WaitResp(5000, MAX_MID_INTERCHAR_TMOUT);
