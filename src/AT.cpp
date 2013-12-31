@@ -18,7 +18,7 @@
 
 
 #include "Arduino.h"
-#include "sim900_at.h"
+#include "AT.h"
 
 extern "C" {
   #include <string.h>

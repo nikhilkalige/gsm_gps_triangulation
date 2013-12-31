@@ -18,7 +18,7 @@
 
 
 #include "Arduino.h"
-#include "sim900_gsm.h"
+#include "GSM.h"
 
 extern "C" {
   #include <string.h>

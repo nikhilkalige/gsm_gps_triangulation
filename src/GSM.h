@@ -59,8 +59,8 @@
 // length for the internal communication buffer
 #define COMM_BUF_LEN        400
 
-#include "sim900_at.h"
-#include "sim900_gprs.h"
+#include "AT.h"
+#include "GSM_GPRS.h"
 
 
 

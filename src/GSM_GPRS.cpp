@@ -16,8 +16,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <avr/pgmspace.h>
-#include "sim900_gprs.h"
-#include "sim900_gsm.h"
+#include "GSM_GPRS.h"
+#include "GSM.h"
 
 
 extern "C" {

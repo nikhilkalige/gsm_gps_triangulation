@@ -1,4 +1,4 @@
-#include "sim900_gsm.h"
+#include "GSM.h"
 #include <SoftwareSerial.h>
 
 
