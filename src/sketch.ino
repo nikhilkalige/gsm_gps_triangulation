@@ -6,7 +6,7 @@
 signed char ret_val;
 uint16_t num_of_rx_bytes;
 byte* ptr_to_data;
-char buffer[COMM_BUF_LEN];
+//char buffer[COMM_BUF_LEN];
 SoftwareSerial debug(10,11);
 
 void getcellinfo();
@@ -122,7 +122,7 @@ void setup()
             //debug.println("TCP Open Error");
         }
 #if 1
-        ret_val = gsm.SendTCPdata(header,packet,buffer);
+        ret_val = gsm.SendTCPdata(header,packet,NULL);
         if(ret_val)
         {
             //debug.println("Send OK");
