@@ -68,7 +68,7 @@ char GSM::InitGPRS(char* apn, char* login, char* password)
     char ret_val = -1;
     char cmd[100];
 
-    if (CLS_FREE != GetCommLineStatus()) return (ret_val);
+    //if (CLS_FREE != GetCommLineStatus()) return (ret_val);
     SetCommLineStatus(CLS_ATCMD);
     ret_val = SendATCmdWaitRespF(PSTR("AT+CSTT=\"CMNET\""), START_XXLONG_COMM_TMOUT, MAX_MID_INTERCHAR_TMOUT, "OK", 2);
     if (ret_val == AT_RESP_OK) {
@@ -102,7 +102,7 @@ char GSM::OpenTCPSocket(char *addr, uint8_t port)
     while(1) {
         PrintlnF(PSTR("AT+CIPSTATUS"));
         WaitResp(START_XLONG_COMM_TMOUT, MAX_MID_INTERCHAR_TMOUT);
-        if(strstr_P((char *)comm_buf, PSTR("IP STATUS")))
+        if((strstr_P((char *)comm_buf, PSTR("IP STATUS"))) || (strstr_P((char *)comm_buf, PSTR("TCP CLOSED"))))
         {
             ret_val = 1;
         }
@@ -114,8 +114,16 @@ char GSM::OpenTCPSocket(char *addr, uint8_t port)
         {
             ret_val = 3;
         }
+        else if(strstr_P((char *)comm_buf, PSTR("IP INITIAL")))
+        {
+            ret_val = 4;
+        }
+        else if(strstr_P((char *)comm_buf, PSTR("PDP DEACT")))
+        {
+            ret_val = 5;
+        }
         else {
-            ret_val = 2;
+            ret_val = 5;
         }
 
         switch(ret_val)
@@ -143,6 +151,12 @@ char GSM::OpenTCPSocket(char *addr, uint8_t port)
             case 3:
                 delay(3000);
                 break;
+            case 4:
+                InitGPRS(NULL,NULL,NULL);
+                break;
+            case 5:
+                SendATCmdWaitRespF(PSTR("AT+CIPSHUT"),START_XLONG_COMM_TMOUT, MAX_MID_INTERCHAR_TMOUT, "OK", 2);
+                break;
             case 9:
                 SetCommLineStatus(CLS_FREE);
                 return 1;
@@ -165,7 +179,7 @@ char GSM::SendTCPdata_tower(unsigned char *data, unsigned char *d2)
     char status, temp;
     PrintlnF(PSTR("AT+CIPSEND=158"));
     if (RX_FINISHED_STR_RECV == WaitResp(START_LONG_COMM_TMOUT, MAX_INTERCHAR_TMOUT, ">")) {
-        Print((char*)data);
+        PrintF((char*)data);
         ret_val = 1;
         for(uint8_t i=0; i< 55; i++)
         {

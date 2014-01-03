@@ -40,7 +40,7 @@ struct pos mypos;
 struct towers_struct towers;
 
 const uint8_t PROGMEM header[]  = "POST /glm/mmap HTTP/1.1\r\nHost: www.google.com\r\nContent-type: application/binary\r\nContent-Length: 55\r\n\r\n";
-const uint8_t PROGMEM header_xively[] = "PUT /v2/feeds/1098360437.csv HTTP/1.1\r\nHost: api.xively.com\r\nX-ApiKey: J0M4jK2f6m57whJSbLD13xKXRJULR4pT9fUP4gnpFB39qSZC\r\n\r\n";
+const uint8_t PROGMEM header_xively[] = "PUT /v2/feeds/1098360437.csv HTTP/1.1\r\nHost: api.xively.com\r\nX-ApiKey: J0M4jK2f6m57whJSbLD13xKXRJULR4pT9fUP4gnpFB39qSZC\r\nContent-Length: ";
 
 uint8_t packet[] =
 {
@@ -70,6 +70,7 @@ uint8_t packet[] =
 
 
 char address[] = "www.google.com";
+char address_xively[] = "api.xively.com";
 unsigned char buf[70];
 
 // GPS serial port
@@ -110,7 +111,7 @@ void setup()
         delay(1000);
     }
 
-    debug.println("Registration successfull");
+    debug.println("Reg suc");
 #endif
 
     // use GPRS APN "internet" - it is necessary to find out right one for
@@ -118,7 +119,7 @@ void setup()
     /* provide some delay for initiation of gprs */
     delay(2000);
     ret_val = 0;
-#if 1
+#if 0
     while (!ret_val)
     {
         ret_val = gsm.InitGPRS(NULL, NULL, NULL);
@@ -160,24 +161,28 @@ void loop()
         timer = millis(); // reset the timer
     }
 #endif
-    if (digitalRead(BUTTON) == HIGH)
+    if (digitalRead(BUTTON) == LOW)
     {
+         debug.println("B press");
         // Send data to server
         delay(2000);
         char status = 0;
         if (GPS.fix)
         {
+            debug.println("gps");
             mypos.latitude = GPS.latitude;
             mypos.longitude  = GPS.longitude;
             status = 1;
         }
         else
         {
+            debug.println("gsm");
             gsm_get_latitude();
             status = 1;
         }
         if (status)
         {
+            debug.println("server");
             send_server();
         }
     }
@@ -424,18 +429,29 @@ char gsm_get_latitude()
 
 char send_server()
 {
-    char temp[20];
-    ret_val = gsm.OpenTCPSocket(address, 80);
-    strcpy((char *)buf, "Latitude,");
+    // Assumption of max length as 999
+    char temp[20], length, i;
+    debug.println(mypos.latitude, 6);
+    debug.println(mypos.longitude, 6);
+    ret_val = gsm.OpenTCPSocket(address_xively, 80);
+    strcpy((char *)buf, (char*)"   \r\n\r\n");
+    strcat((char *)buf, "Latitude,");
     dtostrf(mypos.latitude, 11, 6, temp);
     strcat((char*)buf, temp);
-    strcat((char*)buf, " ");
+    strcat((char*)buf, "\r\n");
     strcat((char *)buf, "Longitude,");
-    dtostrf(mypos.latitude, 11, 6, temp);
+    dtostrf(mypos.longitude, 11, 6, temp);
     strcat((char*)buf, temp);
+    length = strlen((char*)buf);
+    length-= 7;
+    itoa(length, temp, 10);
+    length = strlen((char*)temp);
+    for(i=0;i<length;i++) {
+        buf[i] = temp[i];
+    }
     ret_val = gsm.SendTCPdata((unsigned char*)header_xively, buf, NULL);
 }
-
+/*
 char *dtostrf (double val, signed char width, unsigned char prec, char *sout)
 {
     char fmt[20];
@@ -443,3 +459,4 @@ char *dtostrf (double val, signed char width, unsigned char prec, char *sout)
     sprintf(sout, fmt, val);
     return sout;
 }
+*/
