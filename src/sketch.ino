@@ -2,6 +2,7 @@
 #include <SoftwareSerial.h>
 #include "GPS.h"
 
+#define BUTTON 7
 
 signed char ret_val;
 uint16_t num_of_rx_bytes;
@@ -13,6 +14,7 @@ void getcellinfo();
 char *extract_cell_data(char *buff, char id);
 void fill_packet(char id);
 void triangulate();
+char gsm_get_latitude();
 
 struct cell_struct
 {
@@ -38,6 +40,7 @@ struct pos mypos;
 struct towers_struct towers;
 
 uint8_t header[]  = "POST /glm/mmap HTTP/1.1\r\nHost: www.google.com\r\nContent-type: application/binary\r\nContent-Length: 55\r\n\r\n";
+uint8_t header_xively[] = "PUT /v2/feeds/1098360437.csv HTTP/1.1\r\nHost: api.xively.com\r\nX-ApiKey: J0M4jK2f6m57whJSbLD13xKXRJULR4pT9fUP4gnpFB39qSZC\r\n\r\n";
 
 uint8_t packet[] =
 {
@@ -67,7 +70,7 @@ uint8_t packet[] =
 
 
 char address[] = "www.google.com";
-unsigned char buf[50];
+unsigned char buf[70];
 
 // GPS serial port
 SoftwareSerial mySerial(3, 2);
@@ -79,8 +82,13 @@ void useInterrupt(boolean);
 void setup()
 {
     debug.begin(4800);
+
+    pinMode(BUTTON, INPUT);
+    digitalWrite(BUTTON, HIGH);
+
     gsm.InitSerLine(115200);
     GPS.begin(9600);
+
 #if 0
     GPS.sendCommand(GPSGGA, 2);
     GPS.sendCommand(GPSGLL, 0);
@@ -113,7 +121,7 @@ void setup()
 #if 1
     while (!ret_val)
     {
-        ret_val = gsm.InitGPRS(NULL,NULL,NULL);
+        ret_val = gsm.InitGPRS(NULL, NULL, NULL);
     }
 
     if (ret_val)
@@ -126,8 +134,7 @@ void setup()
     }
 #endif
     debug.println("Start OK");
-    gsm.getTowerInfo();
-    getcellinfo();
+
     int i;
     for (i = 0; i < 3; i++)
     {
@@ -135,64 +142,7 @@ void setup()
         debug.println((char *)towers.cell[i].lac);
         debug.println((char *)towers.cell[i].strength);
     }
-    for (i = 0; i < 3; i++)
-    {
-        fill_packet(i);
 
-        ret_val = gsm.OpenTCPSocket(address, 80);
-        if (ret_val)
-        {
-            //debug.println("TCP Open");
-        }
-        else
-        {
-            //debug.println("TCP Open Error");
-        }
-#if 1
-        ret_val = gsm.SendTCPdata(header, packet, NULL);
-        if (ret_val)
-        {
-            //debug.println("Send OK");
-            char *ptr = strstr((char *)gsm.comm_buf, "\r\n\r\n");
-            char *t;
-            if (ptr)
-            {
-                ptr += 5;
-                memcpy((char *)buf, ptr, 20);
-                /*for(char i=0;i<20;i++)
-                {
-                    debug.println((unsigned char)buf[i], HEX);
-                }*/
-                unsigned long lat, lgt;
-                char str[20];
-                lat = (unsigned long)buf[6] << 24;
-                lat += (unsigned long)buf[7] << 16;
-                lat += (unsigned long)buf[8] << 8;
-                lat += (unsigned long)buf[9];
-                sprintf((char *)str, "%ld", lat);
-                debug.print((char *)str);
-
-                lgt = (unsigned long)buf[10] << 24;
-                lgt += (unsigned long)buf[11] << 16;
-                lgt += (unsigned long)buf[12] << 8;
-                lgt += (unsigned long)buf[13];
-                sprintf((char *)str, "%ld", lgt);
-                debug.println((char *)str);
-
-                towers.cell[i].latitude = (float)lat / 1000000;
-                towers.cell[i].longitude = (float)lgt / 1000000;
-                debug.print(towers.cell[i].latitude, 6);
-                debug.print(",");
-                debug.println(towers.cell[i].longitude, 6);
-            }
-        }
-        else
-        {
-            debug.println("Send Error");
-        }
-    }
-#endif
-    triangulate();
 }
 
 uint32_t timer = millis();
@@ -203,12 +153,39 @@ void loop()
         if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
             return;  // we can fail to parse a sentence in which case we should just wait for another
     }
+#if 0
     if (timer > millis())  timer = millis();
     if (millis() - timer > 2000)
     {
         timer = millis(); // reset the timer
     }
+#endif
+    if (digitalRead(BUTTON) == HIGH)
+    {
+        // Send data to server
+        delay(2000);
+        char status = 0;
+        if (GPS.fix)
+        {
+            mypos.latitude = GPS.latitude;
+            mypos.longitude  = GPS.longitude;
+            status = 1;
+        }
+        else
+        {
+            gsm_get_latitude();
+            status = 1;
+        }
+        if (status)
+        {
+            send_server();
+        }
+    }
 }
+
+
+
+/* Functions */
 
 SIGNAL(TIMER0_COMPA_vect)
 {
@@ -377,4 +354,92 @@ void triangulate()
     debug.print(",");
     debug.println(mypos.longitude, 6);
 
+}
+
+
+char gsm_get_latitude()
+{
+    gsm.getTowerInfo();
+    getcellinfo();
+    unsigned char i;
+    for (i = 0; i < 3; i++)
+    {
+        fill_packet(i);
+        ret_val = gsm.OpenTCPSocket(address, 80);
+        if (ret_val)
+        {
+            //debug.println("TCP Open");
+        }
+        else
+        {
+            //debug.println("TCP Open Error");
+        }
+#if 1
+        ret_val = gsm.SendTCPdata(header, packet, NULL);
+        if (ret_val)
+        {
+            //debug.println("Send OK");
+            char *ptr = strstr((char *)gsm.comm_buf, "\r\n\r\n");
+            char *t;
+            if (ptr)
+            {
+                ptr += 5;
+                memcpy((char *)buf, ptr, 20);
+                /*for(char i=0;i<20;i++)
+                {
+                    debug.println((unsigned char)buf[i], HEX);
+                }*/
+                unsigned long lat, lgt;
+                char str[20];
+                lat = (unsigned long)buf[6] << 24;
+                lat += (unsigned long)buf[7] << 16;
+                lat += (unsigned long)buf[8] << 8;
+                lat += (unsigned long)buf[9];
+                sprintf((char *)str, "%ld", lat);
+                debug.print((char *)str);
+
+                lgt = (unsigned long)buf[10] << 24;
+                lgt += (unsigned long)buf[11] << 16;
+                lgt += (unsigned long)buf[12] << 8;
+                lgt += (unsigned long)buf[13];
+                sprintf((char *)str, "%ld", lgt);
+                debug.println((char *)str);
+
+                towers.cell[i].latitude = (float)lat / 1000000;
+                towers.cell[i].longitude = (float)lgt / 1000000;
+                debug.print(towers.cell[i].latitude, 6);
+                debug.print(",");
+                debug.println(towers.cell[i].longitude, 6);
+            }
+        }
+        else
+        {
+            debug.println("Send Error");
+        }
+    }
+#endif
+    triangulate();
+}
+
+
+char send_server()
+{
+    char temp[20];
+    ret_val = gsm.OpenTCPSocket(address, 80);
+    strcpy((char *)buf, "Latitude,");
+    dtostrf(mypos.latitude, 11, 6, temp);
+    strcat((char*)buf, temp);
+    strcat((char*)buf, " ");
+    strcat((char *)buf, "Longitude,");
+    dtostrf(mypos.latitude, 11, 6, temp);
+    strcat((char*)buf, temp);
+    ret_val = gsm.SendTCPdata(header_xively, buf, NULL);
+}
+
+char *dtostrf (double val, signed char width, unsigned char prec, char *sout)
+{
+    char fmt[20];
+    sprintf(fmt, "%%%d.%df", width, prec);
+    sprintf(sout, fmt, val);
+    return sout;
 }
