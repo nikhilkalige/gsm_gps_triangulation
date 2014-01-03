@@ -159,7 +159,7 @@ char GSM::OpenTCPSocket(char *addr, uint8_t port)
     return 0;
 }
 
-char GSM::SendTCPdata(unsigned char *data, unsigned char *d2, char* tmp_buffer)
+char GSM::SendTCPdata_tower(unsigned char *data, unsigned char *d2)
 {
     char ret_val = 0;
     char status, temp;
@@ -172,6 +172,41 @@ char GSM::SendTCPdata(unsigned char *data, unsigned char *d2, char* tmp_buffer)
             Write(d2[i]);
         }
         temp = WaitResp(30000, 3000);
+        /*RxInit(30000, MAX_INTERCHAR_TMOUT, 1, 0);
+        do {
+            status = IsRxFinished();
+        } while (status == RX_NOT_FINISHED);
+*/
+       /* if(comm_buf_len) {
+            strcpy((char*)tmp_buffer, (char*)comm_buf);
+        }
+        temp = WaitResp(30000, MAX_INTERCHAR_TMOUT);
+        if (temp != RX_FINISHED_STR_RECV)
+        {
+            ret_val = 0;
+        }
+        Println("EXITAT");*/
+        //temp = WaitResp(30000, MAX_INTERCHAR_TMOUT);
+        /*ret_val = SendATCmdWaitResp("AT+CIPCLOSE", 10000, 600, "CLOSE OK", 3);
+        if(ret_val != AT_RESP_OK)
+        {
+            SetCommLineStatus(CLS_FREE);
+            ret_val = 0;
+        }*/
+    }
+    SetCommLineStatus(CLS_FREE);
+    return ret_val;
+}
+
+char GSM::SendTCPdata(unsigned char *data, unsigned char *d2, char* tmp_buffer)
+{
+    char ret_val = 0;
+    char status, temp;
+    PrintlnF(PSTR("AT+CIPSEND"));
+    if (RX_FINISHED_STR_RECV == WaitResp(START_LONG_COMM_TMOUT, MAX_INTERCHAR_TMOUT, ">")) {
+        PrintF((char*)data);
+        Print((char*)d2);
+        Write(0x1a);
         /*RxInit(30000, MAX_INTERCHAR_TMOUT, 1, 0);
         do {
             status = IsRxFinished();

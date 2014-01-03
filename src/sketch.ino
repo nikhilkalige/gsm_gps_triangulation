@@ -39,8 +39,8 @@ struct pos mypos;
 
 struct towers_struct towers;
 
-uint8_t header[]  = "POST /glm/mmap HTTP/1.1\r\nHost: www.google.com\r\nContent-type: application/binary\r\nContent-Length: 55\r\n\r\n";
-uint8_t header_xively[] = "PUT /v2/feeds/1098360437.csv HTTP/1.1\r\nHost: api.xively.com\r\nX-ApiKey: J0M4jK2f6m57whJSbLD13xKXRJULR4pT9fUP4gnpFB39qSZC\r\n\r\n";
+const uint8_t PROGMEM header[]  = "POST /glm/mmap HTTP/1.1\r\nHost: www.google.com\r\nContent-type: application/binary\r\nContent-Length: 55\r\n\r\n";
+const uint8_t PROGMEM header_xively[] = "PUT /v2/feeds/1098360437.csv HTTP/1.1\r\nHost: api.xively.com\r\nX-ApiKey: J0M4jK2f6m57whJSbLD13xKXRJULR4pT9fUP4gnpFB39qSZC\r\n\r\n";
 
 uint8_t packet[] =
 {
@@ -375,7 +375,7 @@ char gsm_get_latitude()
             //debug.println("TCP Open Error");
         }
 #if 1
-        ret_val = gsm.SendTCPdata(header, packet, NULL);
+        ret_val = gsm.SendTCPdata_tower((unsigned char*)header, packet);
         if (ret_val)
         {
             //debug.println("Send OK");
@@ -433,7 +433,7 @@ char send_server()
     strcat((char *)buf, "Longitude,");
     dtostrf(mypos.latitude, 11, 6, temp);
     strcat((char*)buf, temp);
-    ret_val = gsm.SendTCPdata(header_xively, buf, NULL);
+    ret_val = gsm.SendTCPdata((unsigned char*)header_xively, buf, NULL);
 }
 
 char *dtostrf (double val, signed char width, unsigned char prec, char *sout)

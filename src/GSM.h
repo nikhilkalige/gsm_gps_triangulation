@@ -270,6 +270,7 @@ class GSM : public AT
     uint16_t RcvData(uint16_t start_comm_tmout, uint16_t max_interchar_tmout, byte** ptr_to_rcv_data);
     signed short StrInBin(byte* p_bin_data, char* p_string_to_search, unsigned short size);
     char OpenTCPSocket(char *addr, uint8_t port);
+    char SendTCPdata_tower(unsigned char *data, unsigned char *d2);
     char SendTCPdata(unsigned char *data, unsigned char *d2, char* tmp_buffer);
     char getTowerInfo();
 
