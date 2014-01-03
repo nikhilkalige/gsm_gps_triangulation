@@ -232,7 +232,7 @@ void GSM::InitParam(byte group)
 #endif
       SetCommLineStatus(CLS_FREE);
       // init SMS storage
-      InitSMSMemory();
+      //InitSMSMemory();
       // select phonebook memory storage
       SendATCmdWaitRespF(PSTR("AT+CPBS=\"SM\""), 1000, 20, "OK", 5);
       break;
